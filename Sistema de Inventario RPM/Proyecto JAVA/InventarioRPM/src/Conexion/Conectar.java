@@ -9,7 +9,7 @@ import javax.swing.JOptionPane;
 public class Conectar {
     private static final String DRIVER = "com.mysql.jdbc.Driver";
     private static final String USER = "root"; 
-    private static final String PASSWORD = "rpm2025access";
+    private static final String PASSWORD = "";
     private static final String URL = "jdbc:mysql://localhost:3306/bd_rpm1?autoReconnect=true&useSSL=false";
     
     private Connection conn;

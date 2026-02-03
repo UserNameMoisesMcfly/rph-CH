@@ -153,6 +153,8 @@ public class Frm_BuscarProductos extends javax.swing.JInternalFrame {
             int row = tabla.getSelectedRow();
             Frm_Salida.txt_codigo.setText(tabla.getValueAt(row, 0).toString());
             Frm_Salida.txt_descripcion.setText(tabla.getValueAt(row, 1).toString());
+            // Llenar divisor desde BD (o fallback) al regresar de la búsqueda
+            Frm_Salida.autocompletarDivisorDesdeSeleccion();
             Frm_Salida.txt_cantidad.requestFocus();
             Frm_Salida.enviar = 0;
             dispose();

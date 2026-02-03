@@ -72,7 +72,7 @@
     -->
     
     <target name="-post-jar">
-    <property name="SIGE-2025" value="SIGE-2026"/>
+    <property name="SIGE-2025" value="SIGE-2026v2"/>
  
     <property name="store.dir" value="SIGE"/>
     <property name="store.jar" value="${store.dir}/${store.jar.name}.jar"/>

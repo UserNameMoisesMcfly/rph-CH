@@ -39,68 +39,92 @@ public class Frm_Salida extends javax.swing.JInternalFrame {
         activar();
         
     }
+
+    // Se llama con el botón TOTAL. Calcula la cantidad y copia al "divisor".
     private void piezas(){
-        String a=pallet.getText();
-        String b=txt_codigo.getText();
-        String c=pzs2.getText();
-        String d=pzs.getText();
-        int a1=Integer.parseInt(a);
-        int b1=Integer.parseInt(b);
-        int c1=Integer.parseInt(c);
-        int d1=Integer.parseInt(d);
-        int p=(a1*d1)+c1;
+        String codigoStr = (txt_codigo.getText() == null) ? "" : txt_codigo.getText().trim();
+        if(codigoStr.isEmpty()){
+            JOptionPane.showMessageDialog(this, "Selecciona un SKU primero.");
+            return;
+        }
+
+        Integer a1 = parseEnteroRequerido(pallet, "# de pallet");
+        Integer d1 = parseEnteroRequerido(pzs, "piezas por pallet");
+        int c1 = parseEnteroOpcional(pzs2); // piezas sueltas (si va vacío se toma como 0)
+        if(a1 == null || d1 == null){
+            return;
+        }
+
+        int p = (a1 * d1) + c1;
         txt_cantidad.setText(String.valueOf(p));
-        if(b1==401742){
-            txt_codigo1.setText("400166");
-            txt_descripcion1.setText("DIV.20/4 LAM.");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
-        }else if(b1==400734){
-            txt_codigo1.setText("400689");
-            txt_descripcion1.setText("DIV. LAM. 40 OZ");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
-        }else if(b1==401735){
-            txt_codigo1.setText("401473");
-            txt_descripcion1.setText("Divisor CB litro");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
-        }else if(b1==400349){
-            txt_codigo1.setText("400166");
-            txt_descripcion1.setText("DIV.20/4 LAM.");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
-        }else if(b1==401453){
-            txt_codigo1.setText("400689");
-            txt_descripcion1.setText("DIV. LAM. 40 OZ");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
-        }else if(b1==402087){
-            txt_codigo1.setText("401473");
-            txt_descripcion1.setText("Divisor CB litro");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
-        }else if(b1==401462){
-            txt_codigo1.setText("400164");
-            txt_descripcion1.setText("DIV.20/2 LAM.GEN.");
-            pallet1.setText(""+a1);
-            pzs1.setText(""+d1);
-            pzs3.setText(""+c1);
-            txt_cantidad1.setText(""+p);
+
+        // Autocompletar divisor si está vacío (BD -> fallback hardcodeado)
+        if(txt_codigo1.getText().trim().isEmpty()){
+            String[] div = CP.obtenerDivisorPorProducto(codigoStr);
+            if(div != null){
+                txt_codigo1.setText(div[0]);
+                txt_descripcion1.setText(div[1]);
+            }
+        }
+
+        if(txt_codigo1.getText().trim().isEmpty()){
+            JOptionPane.showMessageDialog(this, "No se encontró divisor para el SKU: " + codigoStr);
+            return;
+        }
+
+        // Copiar captura al renglón del divisor
+        pallet1.setText(String.valueOf(a1));
+        pzs1.setText(String.valueOf(d1));
+        pzs3.setText(String.valueOf(c1));
+        txt_cantidad1.setText(String.valueOf(p));
+    }
+
+    /**
+     * Se usa al regresar de la búsqueda (internal frame) para llenar divisor
+     * sin esperar al botón TOTAL.
+     */
+    public static void autocompletarDivisorDesdeSeleccion(){
+        try{
+            String codigoStr = (txt_codigo.getText() == null) ? "" : txt_codigo.getText().trim();
+            if(codigoStr.isEmpty()) return;
+
+            Cls_Salida tmp = new Cls_Salida();
+            String[] div = tmp.obtenerDivisorPorProducto(codigoStr);
+            if(div != null){
+                txt_codigo1.setText(div[0]);
+                txt_descripcion1.setText(div[1]);
+            }
+        }catch(Exception e){
+            System.err.println("Error autocompletando divisor: " + e.getMessage());
         }
     }
+
+    private Integer parseEnteroRequerido(javax.swing.JTextField campo, String nombre){
+        String t = (campo.getText() == null) ? "" : campo.getText().trim();
+        if(t.isEmpty()){
+            JOptionPane.showMessageDialog(this, "Falta capturar: " + nombre);
+            campo.requestFocus();
+            return null;
+        }
+        try{
+            return Integer.parseInt(t);
+        }catch(NumberFormatException e){
+            JOptionPane.showMessageDialog(this, "Valor inválido en " + nombre + ": " + t);
+            campo.requestFocus();
+            return null;
+        }
+    }
+
+    private int parseEnteroOpcional(javax.swing.JTextField campo){
+        String t = (campo.getText() == null) ? "" : campo.getText().trim();
+        if(t.isEmpty()) return 0;
+        try{
+            return Integer.parseInt(t);
+        }catch(NumberFormatException e){
+            return 0;
+        }
+    }
+
     public void listar(){
        jtb_salida.setModel(CP.getDatosSalida());
        DefaultTableCellRenderer tcr=new DefaultTableCellRenderer();
@@ -185,6 +209,35 @@ public class Frm_Salida extends javax.swing.JInternalFrame {
     }
 
     private void guardar(){
+        // Validaciones básicas para evitar NumberFormatException/NullPointer
+        if(txt_codigo.getText() == null || txt_codigo.getText().trim().isEmpty()){
+            JOptionPane.showMessageDialog(this, "Selecciona un SKU primero.");
+            return;
+        }
+        if(jdc_fecha.getDate() == null){
+            JOptionPane.showMessageDialog(this, "Selecciona la fecha.");
+            jdc_fecha.requestFocus();
+            return;
+        }
+        // Si aún no hay divisor, intentar autocompletar
+        if(txt_codigo1.getText() == null || txt_codigo1.getText().trim().isEmpty()){
+            String[] div = CP.obtenerDivisorPorProducto(txt_codigo.getText().trim());
+            if(div != null){
+                txt_codigo1.setText(div[0]);
+                txt_descripcion1.setText(div[1]);
+            }
+        }
+        if(txt_codigo1.getText() == null || txt_codigo1.getText().trim().isEmpty()){
+            JOptionPane.showMessageDialog(this, "No se encontró divisor para el SKU. Presiona TOTAL o revisa la configuración.");
+            return;
+        }
+        if(txt_cantidad.getText() == null || txt_cantidad.getText().trim().isEmpty() ||
+           txt_cantidad1.getText() == null || txt_cantidad1.getText().trim().isEmpty()){
+            JOptionPane.showMessageDialog(this, "Captura pallet/piezas y presiona TOTAL antes de imprimir.");
+            return;
+        }
+
+
         //int f=Integer.parseInt(R.getText());
         String codigo = txt_codigo.getText();
         String codigo1 = txt_codigo1.getText();
